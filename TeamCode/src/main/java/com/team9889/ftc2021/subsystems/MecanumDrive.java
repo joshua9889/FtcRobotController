@@ -13,7 +13,7 @@ import java.util.List;
 
 public class MecanumDrive {
     private DcMotorEx frontLeft, frontRight, backLeft, backRight;
-    private RevIMU imu;
+    public RevIMU imu;
     private List<LynxModule> allHubs;
     private double frontLeftTargetVelocity, frontRightTargetVelocity, backLeftTargetVelocity, backRightTargetVelocity;
 
@@ -79,7 +79,6 @@ public class MecanumDrive {
         telemetry.addData("IMU X", round(this.imu.getPosition().x, 5));
         telemetry.addData("IMU Y", round(this.imu.getPosition().y, 5));
         telemetry.addData("IMU Z", round(this.imu.getPosition().z, 5));
-        telemetry.update();
     }
 
     public void setPower(double frontLeftTargetVelocity, double frontRightTargetVelocity, double backLeftTargetVelocity, double backRightTargetVelocity) {

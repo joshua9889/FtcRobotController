@@ -4,8 +4,17 @@ import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.RobotLog;
-import com.team9889.lib.Filter;
+import com.team9889.ftc2021.Constants;
 
+import org.apache.commons.math3.filter.DefaultMeasurementModel;
+import org.apache.commons.math3.filter.DefaultProcessModel;
+import org.apache.commons.math3.filter.KalmanFilter;
+import org.apache.commons.math3.filter.MeasurementModel;
+import org.apache.commons.math3.filter.ProcessModel;
+import org.apache.commons.math3.linear.Array2DRowRealMatrix;
+import org.apache.commons.math3.linear.ArrayRealVector;
+import org.apache.commons.math3.linear.RealMatrix;
+import org.apache.commons.math3.linear.RealVector;
 import org.firstinspires.ftc.robotcore.external.navigation.Acceleration;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
@@ -58,56 +67,141 @@ public class RevIMU {
     private Velocity integratedVelocity;
     private Position integratedPosition;
 
-    // Need to adjust these values
-    private Filter xAccelerationFilter = new Filter(15000,44100, Filter.PassType.Highpass,1);
-    private Filter yAccelerationFilter = new Filter(15000,44100, Filter.PassType.Highpass,1);
-    private Filter zAccelerationFilter = new Filter(15000,44100, Filter.PassType.Highpass,1);
+    double initialAcceleration = 0.1;
+    double measurementNoise = 0.3;
+    double processNoise = 0.001;
+    double dt = 0.1d;
+
+//    { 1d, 0d, 0d, 0d, 0d, 0d, 0d, 0d, 0d},
+//    { 0d, 1d, 0d, 0d, 0d, 0d, 0d, 0d, 0d},
+//    { 0d, 0d, 1d, 0d, 0d, 0d, 0d, 0d, 0d},
+//    { 0d, 0d, 0d, 1d, 0d, 0d, 0d, 0d, 0d},
+//    { 0d, 0d, 0d, 0d, 1d, 0d, 0d, 0d, 0d},
+//    { 0d, 0d, 0d, 0d, 0d, 1d, 0d, 0d, 0d},
+//    { 0d, 0d, 0d, 0d, 0d, 0d, 1d, 0d, 0d},
+//    { 0d, 0d, 0d, 0d, 0d, 0d, 0d, 1d, 0d},
+//    { 0d, 0d, 0d, 0d, 0d, 0d, 0d, 0d, 1d}
+
+    RealMatrix A = new Array2DRowRealMatrix(new double[][] {
+            { 1d, 0d, 0d},
+            { 0d, 1d, 0d},
+            { 0d, 0d, 1d}
+    });
+
+    RealMatrix B = null;
+
+    RealMatrix H = new Array2DRowRealMatrix(new double[][] {
+            { 1d, 0d, 0d},
+            { 0d, 1d, 0d},
+            { 0d, 0d, 1d}
+    });
+
+    RealVector x = new ArrayRealVector(new double[] { initialAcceleration, initialAcceleration, initialAcceleration });
+
+    RealMatrix Q = new Array2DRowRealMatrix(new double[][] {
+            { processNoise, 0d,             0d},
+            { 0d,           processNoise,   0d},
+            { 0d,           0d,             processNoise}
+    });
+
+    RealMatrix P0 = new Array2DRowRealMatrix(new double[][] {
+            { 1d, 0d, 0d},
+            { 0d, 1d, 0d},
+            { 0d, 0d, 1d}
+    });
+
+    RealMatrix R = new Array2DRowRealMatrix(new double[][] {
+            { measurementNoise, 0d, 0d},
+            { 0d, measurementNoise, 0d},
+            { 0d, 0d, measurementNoise}
+    });
+
+    ProcessModel pm = new DefaultProcessModel(A, B, Q, x, P0);
+    MeasurementModel mm = new DefaultMeasurementModel(H, R);
+    KalmanFilter accelKalmanFilter = new KalmanFilter(pm, mm);
 
     public void update() {
         if (imu != null) {
             currentOrientation = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.RADIANS);
             acceleration = imu.getLinearAcceleration();
 
-            xAccelerationFilter.Update((float) getRawAcceleration().xAccel);
-            yAccelerationFilter.Update((float) getRawAcceleration().yAccel);
-            zAccelerationFilter.Update((float) getRawAcceleration().zAccel);
+            Acceleration minimizedAcceleration = new Acceleration();
+            minimizedAcceleration.xAccel = Math.abs(acceleration.xAccel) > 0.2 ? acceleration.xAccel : 0;
+            minimizedAcceleration.yAccel = Math.abs(acceleration.yAccel) > 0.2 ? acceleration.yAccel : 0;
+            minimizedAcceleration.zAccel = Math.abs(acceleration.zAccel) > 0.2 ? acceleration.zAccel : 0;
 
-            accelerationFiltered.xAccel = xAccelerationFilter.getValue();
-            accelerationFiltered.yAccel = yAccelerationFilter.getValue();
-            accelerationFiltered.zAccel = zAccelerationFilter.getValue();
+            accelKalmanFilter.predict();
 
+            RealVector z = new ArrayRealVector(new double[] { minimizedAcceleration.xAccel, minimizedAcceleration.yAccel, minimizedAcceleration.zAccel });
+
+            accelKalmanFilter.correct(z);
+
+            accelerationFiltered.xAccel = accelKalmanFilter.getStateEstimation()[0];
+            accelerationFiltered.yAccel = accelKalmanFilter.getStateEstimation()[1];
+            accelerationFiltered.zAccel = accelKalmanFilter.getStateEstimation()[2];
+
+//            testFilter1();
             testIntegration();
         } else {
             RobotLog.d("IMU not initialized");
         }
     }
 
+    // Need to adjust these values
+    private Filter xAccelerationFilter = new Filter(Constants.frequency, Constants.sampleRate, Filter.PassType.Highpass,Constants.resonance);
+    private Filter yAccelerationFilter = new Filter(Constants.frequency, Constants.sampleRate, Filter.PassType.Highpass,Constants.resonance);
+    private Filter zAccelerationFilter = new Filter(Constants.frequency, Constants.sampleRate, Filter.PassType.Highpass,Constants.resonance);
+
+    private CircularBuffer xBuffer = new CircularBuffer(Constants.windowSize);
+    private CircularBuffer yBuffer = new CircularBuffer(Constants.windowSize);
+    private CircularBuffer zBuffer = new CircularBuffer(Constants.windowSize);
+
+    private void testFilter1() {
+        // xAccelerationFilter.Update((float) getRawAcceleration().xAccel);
+        // yAccelerationFilter.Update((float) getRawAcceleration().yAccel);
+        // zAccelerationFilter.Update((float) getRawAcceleration().zAccel);
+
+        xBuffer.addValue(getRawAcceleration().xAccel);
+        yBuffer.addValue(getRawAcceleration().yAccel);
+        zBuffer.addValue(getRawAcceleration().zAccel);
+
+        //  accelerationFiltered.xAccel = xBuffer.getAverage();
+        //  accelerationFiltered.yAccel = yBuffer.getAverage();
+        //  accelerationFiltered.zAccel = zBuffer.getAverage();
+
+        accelerationFiltered.xAccel = Math.abs(xBuffer.getAverage()) > 0.2 ? xBuffer.getAverage() : 0;
+        accelerationFiltered.yAccel = Math.abs(yBuffer.getAverage()) > 0.2 ? yBuffer.getAverage() : 0;
+        accelerationFiltered.zAccel = Math.abs(zBuffer.getAverage()) > 0.2 ? zBuffer.getAverage() : 0;
+    }
+
+    boolean startIntegration = false;
     // Need to implement a high pass filter so it doesn't drift as much
     private void testIntegration() {
-        Orientation deltaOrientation = currentOrientation;
-        deltaOrientation.firstAngle -= lastOrientation.firstAngle;
-        deltaOrientation.secondAngle -= lastOrientation.secondAngle;
-        deltaOrientation.thirdAngle -= lastOrientation.thirdAngle;
+        if(Math.abs(accelerationFiltered.xAccel) < 0.0003 && !startIntegration) {
+            startIntegration = true;
+            timer.reset();
+        }
 
-        double dt = timer.seconds();
+        if (startIntegration) {
+            Orientation deltaOrientation = currentOrientation;
+            deltaOrientation.firstAngle -= lastOrientation.firstAngle;
+            deltaOrientation.secondAngle -= lastOrientation.secondAngle;
+            deltaOrientation.thirdAngle -= lastOrientation.thirdAngle;
 
-        if (Math.abs(getFilteredAcceleration().xAccel) > accelerationMinimum.xAccel) {
+            double dt = timer.seconds();
+
             integratedVelocity.xVeloc += getFilteredAcceleration().xAccel * dt;
             integratedPosition.x += integratedVelocity.xVeloc * dt;
-        }
 
-        if (Math.abs(getFilteredAcceleration().yAccel) > accelerationMinimum.yAccel) {
             integratedVelocity.yVeloc += getFilteredAcceleration().yAccel * dt;
             integratedPosition.y += integratedVelocity.yVeloc * dt;
-        }
 
-        if (Math.abs(getFilteredAcceleration().zAccel) > accelerationMinimum.zAccel) {
             integratedVelocity.zVeloc += getFilteredAcceleration().zAccel * dt;
             integratedPosition.z += integratedVelocity.zVeloc * dt;
-        }
 
-        lastOrientation = currentOrientation;
-        timer.reset();
+            lastOrientation = currentOrientation;
+            timer.reset();
+        }
     }
 
     public double getNormalHeading(AngleUnit angleUnit) {
