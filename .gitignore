@@ -87,3 +87,4 @@ lint/tmp/
 # lint/reports/
 *.hprof
 .idea/jarRepositories.xml
+.idea/jarRepositories.xml

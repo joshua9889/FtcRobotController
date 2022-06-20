@@ -7,13 +7,17 @@ import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.team9889.ftc2021.subsystems.MecanumDrive;
+import com.team9889.ftc2021.subsystems.PixyCam;
+import com.team9889.lib.CircularBuffer;
+import com.team9889.lib.Rate;
 
 @TeleOp
 public class MecanumOpMode extends LinearOpMode {
     MecanumDrive drive = new MecanumDrive();
+    PixyCam pixy = new PixyCam();
 
     DriverStation driverStation = new DriverStation();
-    ElapsedTime loopTimer = new ElapsedTime();
+    Rate rate = new Rate(30);
 
     @Override
     public void runOpMode() throws InterruptedException {
@@ -21,10 +25,11 @@ public class MecanumOpMode extends LinearOpMode {
         telemetry = new MultipleTelemetry(telemetry, dashboard.getTelemetry());
 
         drive.init(hardwareMap);
+        pixy.init(hardwareMap);
         driverStation.init(gamepad1, gamepad2);
 
         telemetry.setMsTransmissionInterval(100);
-        telemetry.addData("Waiting", "for Start");
+        telemetry.addData("Waiting for Start", "");
         telemetry.update();
 
         waitForStart();
@@ -35,13 +40,16 @@ public class MecanumOpMode extends LinearOpMode {
             drive.setPower(driverStation.getX(),driverStation.getY(),driverStation.getAngular());
 
             drive.update();
+            pixy.update();
 
-            telemetry.addData("Loop dt (ms)", Math.round(loopTimer.milliseconds()));
+            double dt = rate.getRealDt();
+            telemetry.addData("Loop dt (ms)", dt * 1000);
+            telemetry.addData("Loop Hz", 1. / dt);
             drive.updateTelemetry(telemetry);
+            pixy.updateTelemetry(telemetry);
             telemetry.update();
 
-            sleep((long) (Math.max(20 - loopTimer.milliseconds(), 0)));
-            loopTimer.reset();
+            rate.sleep();
         }
     }
 }

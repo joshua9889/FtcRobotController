@@ -68,7 +68,7 @@ public class RevIMU {
     private Position integratedPosition;
 
     double initialAcceleration = 0.1;
-    double measurementNoise = 0.3;
+    double measurementNoise = 0.2;
     double processNoise = 0.001;
     double dt = 0.1d;
 
@@ -174,15 +174,11 @@ public class RevIMU {
         accelerationFiltered.zAccel = Math.abs(zBuffer.getAverage()) > 0.2 ? zBuffer.getAverage() : 0;
     }
 
-    boolean startIntegration = false;
+    boolean startIntegration = true;
+    ElapsedTime settleTimer = new ElapsedTime();
     // Need to implement a high pass filter so it doesn't drift as much
     private void testIntegration() {
-        if(Math.abs(accelerationFiltered.xAccel) < 0.0003 && !startIntegration) {
-            startIntegration = true;
-            timer.reset();
-        }
-
-        if (startIntegration) {
+        if (!startIntegration && settleTimer.milliseconds() > 10000) {
             Orientation deltaOrientation = currentOrientation;
             deltaOrientation.firstAngle -= lastOrientation.firstAngle;
             deltaOrientation.secondAngle -= lastOrientation.secondAngle;
@@ -201,6 +197,9 @@ public class RevIMU {
 
             lastOrientation = currentOrientation;
             timer.reset();
+        } else if (startIntegration) {
+            settleTimer.reset();
+            startIntegration = false;
         }
     }
 
