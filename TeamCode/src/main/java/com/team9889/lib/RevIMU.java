@@ -186,6 +186,7 @@ public class RevIMU {
 
             double dt = timer.seconds();
 
+            
             integratedVelocity.xVeloc += getFilteredAcceleration().xAccel * dt;
             integratedPosition.x += integratedVelocity.xVeloc * dt;
 

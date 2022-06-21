@@ -1,56 +1,71 @@
 package com.team9889.ftc2021;
 
-import com.qualcomm.hardware.rev.Rev2mDistanceSensor;
+import com.acmerobotics.dashboard.FtcDashboard;
+import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.I2cDeviceSynch;
+import com.team9889.lib.Rate;
 
 @TeleOp
 public class PixyCamTestOpMode extends LinearOpMode {
-    I2cDeviceSynch pixyCam;
-
-    double x, y, width, height, numObjects;
-
-    byte[] pixyData;
-
     @Override
     public void runOpMode() throws InterruptedException {
 
-        pixyCam = hardwareMap.i2cDeviceSynch.get("pixyCam");
+        FtcDashboard dashboard = FtcDashboard.getInstance();
+        telemetry = new MultipleTelemetry(telemetry, dashboard.getTelemetry());
 
+        byte[] pixyData;
+
+        I2cDeviceSynch pixyCam;
+        pixyCam = hardwareMap.i2cDeviceSynch.get("pixyCam");
+        Rate rate = new Rate(60);
 
         waitForStart();
 
-        while(opModeIsActive()){
+        while(opModeIsActive()) {
             pixyCam.engage();
 
-            pixyData = pixyCam.read(0x5c, 8);
+            telemetry.addData("! dt", 1. / rate.getRealDt());
 
-            x = pixyData[1];
-            y = pixyData[2];
-            width = pixyData[3];
-            height = pixyData[4];
-            numObjects = pixyData[0];
-
-            int counter = 0;
-            for (int data :pixyData) {
-                telemetry.addData(String.valueOf(counter), data);
-                counter++;
+            int[] registerList = new int[]{0x4f, 0x50, 0x51, 0x52, 0x53, 0x54, 0x55, 0x56, 0x57};
+            int register = 0x50;
+//            for (int register=79; register < 87; register++) {
+            pixyData = pixyCam.read(register, 5);
+            int count = 0;
+            for (int data : pixyData) {
+                telemetry.addData(register + " | " + count, data);
+                count++;
             }
-//            telemetry.addData("0", 0xff&pixyData[0]);
-//            telemetry.addData("1", 0xff&pixyData[1]);
-//            telemetry.addData("2", 0xff&pixyData[2]);
-//            telemetry.addData("3", 0xff&pixyData[3]);
-//            telemetry.addData("4", 0xff&pixyData[4]);
-//            telemetry.addData("X", x);
-//            telemetry.addData("Y", y);
-//            telemetry.addData("width", width);
-//            telemetry.addData("height", height);
+//        }
 
-            telemetry.addData("Length", pixyData.length);
+//            telemetry.addData("Lenth", pixyData[0]);
+
+//            int x = pixyData[1];
+//            int y = pixyData[2];
+//            int width = pixyData[3];
+//            int height = pixyData[4];
+//
+//            int left_point_x = x - (width/2);
+//            int left_point_y = y - (height/2);
+//
+//            int right_point_x = x + (width/2);
+//            int right_point_y = y + (height/2);
+
+//            telemetry.addData("Length", pixyData[0]);
+//            telemetry.addData("1 X", x);
+//            telemetry.addData("1 Y", y);
+//            telemetry.addData("1 Width", width);
+//            telemetry.addData("1 Height", height);
+//
+//            telemetry.addData("2 Left X", left_point_x);
+//            telemetry.addData("2 Left Y", left_point_y);
+//            telemetry.addData("2 Right X", right_point_x);
+//            telemetry.addData("2 Right Y", right_point_y);
+
             telemetry.update();
-            sleep (500);
+            rate.sleep();
         }
-
     }
 }
+
