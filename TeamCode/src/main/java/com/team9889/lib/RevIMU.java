@@ -15,6 +15,7 @@ import org.apache.commons.math3.linear.Array2DRowRealMatrix;
 import org.apache.commons.math3.linear.ArrayRealVector;
 import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.linear.RealVector;
+import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.robotcore.external.navigation.Acceleration;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
@@ -204,8 +205,8 @@ public class RevIMU {
         }
     }
 
-    public double getNormalHeading(AngleUnit angleUnit) {
-        return currentOrientation.toAngleUnit(angleUnit).firstAngle;
+    public Orientation getNormalHeading() {
+        return currentOrientation;
     }
 
     public Position getPosition() {
@@ -222,5 +223,21 @@ public class RevIMU {
 
     public Acceleration getRawAcceleration() {
         return acceleration;
+    }
+
+    public void toTelemetry(Telemetry telemetry) {
+        telemetry.addData("IMU Angle (deg)", this.getNormalHeading().toAngleUnit(AngleUnit.DEGREES).firstAngle);
+        telemetry.addData("IMU X Raw Acceleration (m/s^2)", this.getRawAcceleration().xAccel);
+        telemetry.addData("IMU Y Raw Acceleration (m/s^2)", this.getRawAcceleration().yAccel);
+        telemetry.addData("IMU Z Raw Acceleration (m/s^2)", this.getRawAcceleration().zAccel);
+        telemetry.addData("IMU X Filtered Acceleration (m/s^2)", this.getFilteredAcceleration().xAccel);
+        telemetry.addData("IMU Y Filtered Acceleration (m/s^2)", this.getFilteredAcceleration().yAccel);
+        telemetry.addData("IMU Z Filtered Acceleration (m/s^2)", this.getFilteredAcceleration().zAccel);
+        telemetry.addData("IMU X Velocity (m/s)", this.getVelocity().xVeloc);
+        telemetry.addData("IMU Y Velocity (m/s)", this.getVelocity().yVeloc);
+        telemetry.addData("IMU Z Velocity (m/s)", this.getVelocity().zVeloc);
+        telemetry.addData("IMU X (m)", this.getPosition().x);
+        telemetry.addData("IMU Y (m)", this.getPosition().y);
+        telemetry.addData("IMU Z (m)", this.getPosition().z);
     }
 }

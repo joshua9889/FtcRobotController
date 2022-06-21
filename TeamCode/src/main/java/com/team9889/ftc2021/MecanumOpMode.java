@@ -6,6 +6,7 @@ import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.team9889.ftc2021.subsystems.MecanumDrive;
 import com.team9889.lib.Rate;
+import com.team9889.lib.Twist;
 
 @TeleOp
 public class MecanumOpMode extends LinearOpMode {
@@ -31,7 +32,8 @@ public class MecanumOpMode extends LinearOpMode {
         telemetry.clear();
 
         while (opModeIsActive()) {
-            drive.setPower(driverStation.getX(),driverStation.getY(),driverStation.getAngular());
+            Twist command = driverStation.getTwistCommand();
+            drive.setTargetTwist(command);
 
             drive.update();
 
