@@ -8,7 +8,7 @@ import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 import com.qualcomm.robotcore.hardware.VoltageSensor;
-import com.team9889.lib.RevIMU;
+import com.team9889.lib.sensors.RevIMU;
 import com.team9889.lib.Twist;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
@@ -25,19 +25,26 @@ public class MecanumDrive {
     public RevIMU imu;
     private List<LynxModule> allHubs;
     private HardwareMap voltageHardwareMap;
-    private boolean velocityControl = true;
-    public static PIDFCoefficients motorCoefficients = new PIDFCoefficients(7,  0,   0, 380);
+    private DriveControlState driveControlState = DriveControlState.OPEN_LOOP;
+
+    public static PIDFCoefficients motorCoefficients = new PIDFCoefficients(12,  0,   0, 650), lastMotorCoefficients;
+
+
     private double frontLeftTargetVelocity, frontRightTargetVelocity, backLeftTargetVelocity, backRightTargetVelocity;
+
+    public enum DriveControlState {
+        VELOCITY_CONTROL, OPEN_LOOP
+    }
 
     public MecanumDrive () {}
 
     public void init(HardwareMap hardwareMap) {
-        init(hardwareMap, true);
+        init(hardwareMap, DriveControlState.VELOCITY_CONTROL);
     }
 
-    public void init(HardwareMap hardwareMap, boolean velocityControl) {
+    public void init(HardwareMap hardwareMap, DriveControlState driveControlState) {
         this.voltageHardwareMap = hardwareMap;
-        this.velocityControl = velocityControl;
+        this.driveControlState = driveControlState;
 
         this.frontLeft = hardwareMap.get(DcMotorEx.class, "lf");
         this.frontRight = hardwareMap.get(DcMotorEx.class, "rf");
@@ -52,12 +59,15 @@ public class MecanumDrive {
         for (DcMotorEx motor : motors) {
             motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
 
-            if (this.velocityControl) {
-                motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-                motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-                motor.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, motorCoefficients);
-            }else {
-               motor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+            switch (this.driveControlState) {
+                case VELOCITY_CONTROL:
+                    motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+                    motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+                    motor.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, motorCoefficients);
+                    break;
+                case OPEN_LOOP:
+                    motor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+                    return;
             }
         }
 
@@ -79,17 +89,21 @@ public class MecanumDrive {
 
         imu.update();
 
-        if (this.velocityControl) {
-            this.frontLeft.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, motorCoefficients);
-            this.frontRight.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, motorCoefficients);
-            this.backLeft.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, motorCoefficients);
-            this.backRight.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, motorCoefficients);
-
-            this.frontLeft.setVelocity(metersToTicks(this.frontLeftTargetVelocity));
-            this.frontRight.setVelocity(metersToTicks(this.frontRightTargetVelocity));
-            this.backLeft.setVelocity(metersToTicks(this.backLeftTargetVelocity));
-            this.backRight.setVelocity(metersToTicks(this.backRightTargetVelocity));
+        if (this.driveControlState == DriveControlState.VELOCITY_CONTROL) {
+            setPIDFCoefficients(motorCoefficients);
+            sendWheelVelocities();
         }
+    }
+
+    private void setPIDFCoefficients(PIDFCoefficients coefficients) {
+        if (coefficients != lastMotorCoefficients) {
+            this.frontLeft.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, coefficients);
+            this.frontRight.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, coefficients);
+            this.backLeft.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, coefficients);
+            this.backRight.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, coefficients);
+        }
+
+        lastMotorCoefficients = coefficients;
     }
 
     private double getBatteryVoltage() {
@@ -123,11 +137,6 @@ public class MecanumDrive {
         telemetry.addData("@ backLeft Velocity (m/s)", getVelocities()[2]);
         telemetry.addData("@ backRight Velocity (m/s)", getVelocities()[3]);
 
-        telemetry.addData("* P", motorCoefficients.p);
-        telemetry.addData("* I", motorCoefficients.i);
-        telemetry.addData("* D", motorCoefficients.d);
-        telemetry.addData("* F", motorCoefficients.f);
-
         getCurrentTwist().toTelemetry("Current Twist", telemetry);
         getTargetTwist().toTelemetry("Target Twist", telemetry);
 
@@ -148,6 +157,13 @@ public class MecanumDrive {
         this.backRightTargetVelocity = backRightTargetVelocity;
     }
 
+    private void sendWheelVelocities() {
+        this.frontLeft.setVelocity(metersToTicks(this.frontLeftTargetVelocity));
+        this.frontRight.setVelocity(metersToTicks(this.frontRightTargetVelocity));
+        this.backLeft.setVelocity(metersToTicks(this.backLeftTargetVelocity));
+        this.backRight.setVelocity(metersToTicks(this.backRightTargetVelocity));
+    }
+
     /**
      *  Taken from https://ecam-eurobot.github.io/Tutorials/mechanical/mecanum.html
      *
@@ -162,8 +178,8 @@ public class MecanumDrive {
      *  lx and ly represent the distance from the robot's center to the wheels projected on the
      *      x and y axis respectively.
      **/
-    private final double lx = ((154. + 146.)/1000.) / 2.0;
-    private final double ly = (25.4 + 115 + 52) / 1000.0;
+    private final double lx = 150.0 / 1000.;
+    private final double ly = 192.4 / 1000.;
 
     private Twist currentTargetTwist = new Twist();
 
@@ -199,10 +215,10 @@ public class MecanumDrive {
         double v_fl = getVelocities()[0], v_fr = getVelocities()[1];
         double v_rl = getVelocities()[2], v_rr = getVelocities()[3];
 
-        measuredTwist.translationalVelocity.xVeloc =  v_fl + v_fr + v_rl + v_rr;
-        measuredTwist.translationalVelocity.yVeloc = -v_fl + v_fr + v_rl - v_rr;
+        measuredTwist.translationalVelocity.xVeloc =  (v_fl + v_fr + v_rl + v_rr) / 4.;
+        measuredTwist.translationalVelocity.yVeloc = (-v_fl + v_fr + v_rl - v_rr) / 4.;
 
-        measuredTwist.angularVelocity.zRotationRate = (float) ((-v_fl+v_fr-v_rl+v_rr) / (lx+ly));
+        measuredTwist.angularVelocity.zRotationRate = (float) ((-v_fl+v_fr-v_rl+v_rr) / (4.0 * (lx+ly)));
 
         return measuredTwist;
     }

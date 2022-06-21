@@ -1,9 +1,10 @@
-package com.team9889.ftc2021;
+package com.team9889.ftc2021.opmodes;
 
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.team9889.ftc2021.DriverStation;
 import com.team9889.ftc2021.subsystems.MecanumDrive;
 import com.team9889.lib.Rate;
 import com.team9889.lib.Twist;

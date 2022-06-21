@@ -25,13 +25,13 @@ public class Twist {
 
     public void toTelemetry(String prefix, Telemetry telemetry) {
         Velocity vel = this.translationalVelocity.toUnit(DistanceUnit.METER);
-        AngularVelocity deg = this.angularVelocity.toAngleUnit(AngleUnit.DEGREES);
+        AngularVelocity deg = this.angularVelocity.toAngleUnit(AngleUnit.RADIANS);
 
         telemetry.addData(prefix + " xVel", vel.xVeloc);
         telemetry.addData(prefix + " yVel", vel.yVeloc);
         telemetry.addData(prefix + " zVel", vel.zVeloc);
-        telemetry.addData(prefix + " x deg/s", deg.xRotationRate);
-        telemetry.addData(prefix + " y deg/s", deg.yRotationRate);
-        telemetry.addData(prefix + " z deg/s", deg.zRotationRate);
+        telemetry.addData(prefix + " x rad/s", deg.xRotationRate);
+        telemetry.addData(prefix + " y rad/s", deg.yRotationRate);
+        telemetry.addData(prefix + " z rad/s", deg.zRotationRate);
     }
 }

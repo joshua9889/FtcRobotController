@@ -1,4 +1,4 @@
-package com.team9889.ftc2021;
+package com.team9889.ftc2021.test;
 
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
@@ -19,7 +19,7 @@ public class TestMecanumOpMode extends LinearOpMode {
         FtcDashboard dashboard = FtcDashboard.getInstance();
         telemetry = new MultipleTelemetry(telemetry, dashboard.getTelemetry());
 
-        drive.init(hardwareMap, false);
+        drive.init(hardwareMap, MecanumDrive.DriveControlState.OPEN_LOOP);
 
         telemetry.setMsTransmissionInterval(100);
         telemetry.addData("Waiting for Start", "");
