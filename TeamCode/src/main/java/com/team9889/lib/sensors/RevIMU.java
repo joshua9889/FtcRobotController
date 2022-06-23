@@ -232,39 +232,45 @@ public class RevIMU {
         return Math.round(value * k) / k;
     }
 
-    public void toTelemetry(Telemetry telemetry, int signs) {
+    public void toTelemetry(Telemetry telemetry, boolean justAngle, int signs) {
         // Angle
         telemetry.addData("IMU Angle (deg)",
                 this.getNormalHeading().toAngleUnit(AngleUnit.DEGREES).firstAngle);
 
-        // Original Acceleration
-        telemetry.addData("IMU X Raw Acceleration (m/s^2)",
-                round(this.getRawAcceleration().xAccel, signs));
-        telemetry.addData("IMU Y Raw Acceleration (m/s^2)",
-                round(this.getRawAcceleration().yAccel, signs));
-        telemetry.addData("IMU Z Raw Acceleration (m/s^2)",
-                round(this.getRawAcceleration().zAccel, signs));
+        if(!justAngle) {
+            // Original Acceleration
+            telemetry.addData("IMU X Raw Acceleration (m/s^2)",
+                    round(this.getRawAcceleration().xAccel, signs));
+            telemetry.addData("IMU Y Raw Acceleration (m/s^2)",
+                    round(this.getRawAcceleration().yAccel, signs));
+            telemetry.addData("IMU Z Raw Acceleration (m/s^2)",
+                    round(this.getRawAcceleration().zAccel, signs));
 
-        // Filtered Acceleration
-        telemetry.addData("IMU X Filtered Acceleration (m/s^2)",
-                round(this.getFilteredAcceleration().xAccel, signs));
-        telemetry.addData("IMU Y Filtered Acceleration (m/s^2)",
-                round(this.getFilteredAcceleration().yAccel, signs));
-        telemetry.addData("IMU Z Filtered Acceleration (m/s^2)",
-                round(this.getFilteredAcceleration().zAccel, signs));
+            // Filtered Acceleration
+            telemetry.addData("IMU X Filtered Acceleration (m/s^2)",
+                    round(this.getFilteredAcceleration().xAccel, signs));
+            telemetry.addData("IMU Y Filtered Acceleration (m/s^2)",
+                    round(this.getFilteredAcceleration().yAccel, signs));
+            telemetry.addData("IMU Z Filtered Acceleration (m/s^2)",
+                    round(this.getFilteredAcceleration().zAccel, signs));
 
-        // Integrated Filtered Acceleration ie. Velocity
-        telemetry.addData("IMU X Velocity (m/s)", round(this.getVelocity().xVeloc, signs));
-        telemetry.addData("IMU Y Velocity (m/s)", round(this.getVelocity().yVeloc, signs));
-        telemetry.addData("IMU Z Velocity (m/s)", round(this.getVelocity().zVeloc, signs));
+            // Integrated Filtered Acceleration ie. Velocity
+            telemetry.addData("IMU X Velocity (m/s)", round(this.getVelocity().xVeloc, signs));
+            telemetry.addData("IMU Y Velocity (m/s)", round(this.getVelocity().yVeloc, signs));
+            telemetry.addData("IMU Z Velocity (m/s)", round(this.getVelocity().zVeloc, signs));
 
-        // Position
-        telemetry.addData("IMU X (m)", round(this.getPosition().x, signs));
-        telemetry.addData("IMU Y (m)", round(this.getPosition().y, signs));
-        telemetry.addData("IMU Z (m)", round(this.getPosition().z, signs));
+            // Position
+            telemetry.addData("IMU X (m)", round(this.getPosition().x, signs));
+            telemetry.addData("IMU Y (m)", round(this.getPosition().y, signs));
+            telemetry.addData("IMU Z (m)", round(this.getPosition().z, signs));
+        }
+    }
+
+    public void toTelemetry(Telemetry telemetry, boolean justAngle) {
+        this.toTelemetry(telemetry, justAngle, 4);
     }
 
     public void toTelemetry(Telemetry telemetry) {
-        this.toTelemetry(telemetry, 4);
+        this.toTelemetry(telemetry, true, 4);
     }
 }

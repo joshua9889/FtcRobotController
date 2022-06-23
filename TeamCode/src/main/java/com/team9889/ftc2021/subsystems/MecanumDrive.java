@@ -8,29 +8,49 @@ import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 import com.qualcomm.robotcore.hardware.VoltageSensor;
+import com.qualcomm.robotcore.util.ElapsedTime;
+import com.team9889.lib.Pose;
 import com.team9889.lib.sensors.RevIMU;
 import com.team9889.lib.Twist;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.AngularVelocity;
+import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
+import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
+import org.firstinspires.ftc.robotcore.external.navigation.Position;
 import org.firstinspires.ftc.robotcore.external.navigation.Velocity;
 
 import java.util.List;
 
 @Config
 public class MecanumDrive {
+
     private DcMotorEx frontLeft, frontRight, backLeft, backRight;
     public RevIMU imu;
     private List<LynxModule> allHubs;
     private HardwareMap voltageHardwareMap;
+
     private DriveControlState driveControlState = DriveControlState.OPEN_LOOP;
 
-    public static PIDFCoefficients motorCoefficients = new PIDFCoefficients(12,  0,   0, 650), lastMotorCoefficients;
+    public static PIDFCoefficients motorCoefficients =
+            new PIDFCoefficients(12,  0,   0, 650),
+            lastMotorCoefficients = motorCoefficients;
 
+    private double frontLeftTargetVelocity, frontRightTargetVelocity;
+    private double backLeftTargetVelocity, backRightTargetVelocity;
 
-    private double frontLeftTargetVelocity, frontRightTargetVelocity, backLeftTargetVelocity, backRightTargetVelocity;
+    private ElapsedTime dt = new ElapsedTime();
+
+    private Pose poseEstimateFromWheelVelocities = new Pose(new Position(),
+            new Orientation(AxesReference.INTRINSIC, AxesOrder.ZXY, AngleUnit.RADIANS,
+                    0, 0, 0, 0));
+
+    private Pose poseEstimateFromCommandVelocities = new Pose(new Position(),
+            new Orientation(AxesReference.INTRINSIC, AxesOrder.ZXY, AngleUnit.RADIANS,
+                    0, 0, 0, 0));
 
     public enum DriveControlState {
         VELOCITY_CONTROL, OPEN_LOOP
@@ -79,6 +99,7 @@ public class MecanumDrive {
             module.setBulkCachingMode(LynxModule.BulkCachingMode.MANUAL);
         }
 
+        dt.reset();
         this.update();
     }
 
@@ -88,6 +109,10 @@ public class MecanumDrive {
         }
 
         imu.update();
+
+        poseEstimateFromWheelVelocities = Pose.integrateXYFromTwist(getCurrentTwist(), poseEstimateFromWheelVelocities, dt);
+        poseEstimateFromCommandVelocities = Pose.integrateXYFromTwist(getTargetTwist(), poseEstimateFromCommandVelocities, dt);
+        dt.reset();
 
         if (this.driveControlState == DriveControlState.VELOCITY_CONTROL) {
             setPIDFCoefficients(motorCoefficients);
@@ -120,25 +145,34 @@ public class MecanumDrive {
     }
 
     public void updateTelemetry(Telemetry telemetry) {
-        telemetry.addData("% Voltage", getBatteryVoltage());
+        telemetry.addData("W_Pose", getRobotPosition().position.toString());
+        telemetry.addData("W_Orientation", getRobotPosition().orientation.toString());
 
-        telemetry.addData("! frontLeft Position (m)", getPositions()[0]);
-        telemetry.addData("! frontRight Position (m)", getPositions()[1]);
-        telemetry.addData("! backLeft Position (m)", getPositions()[2]);
-        telemetry.addData("! backRight Position (m)", getPositions()[3]);
+        telemetry.addData("C_Pose", poseEstimateFromCommandVelocities.position.toString());
+        telemetry.addData("C_Orientation", poseEstimateFromCommandVelocities.orientation.toString());
 
-        telemetry.addData("# frontLeft Target Velocity (m/s)", frontLeftTargetVelocity);
-        telemetry.addData("# frontRight Target Velocity (m/s)", frontRightTargetVelocity);
-        telemetry.addData("# backLeft Target Velocity (m/s)", backLeftTargetVelocity);
-        telemetry.addData("# backRight Target Velocity (m/s)", backRightTargetVelocity);
+        if (false) {
+            telemetry.addData("! frontLeft Position (m)", getPositions()[0]);
+            telemetry.addData("! frontRight Position (m)", getPositions()[1]);
+            telemetry.addData("! backLeft Position (m)", getPositions()[2]);
+            telemetry.addData("! backRight Position (m)", getPositions()[3]);
 
-        telemetry.addData("@ frontLeft Velocity (m/s)", getVelocities()[0]);
-        telemetry.addData("@ frontRight Velocity (m/s)", getVelocities()[1]);
-        telemetry.addData("@ backLeft Velocity (m/s)", getVelocities()[2]);
-        telemetry.addData("@ backRight Velocity (m/s)", getVelocities()[3]);
+            telemetry.addData("# frontLeft Target Velocity (m/s)", frontLeftTargetVelocity);
+            telemetry.addData("# frontRight Target Velocity (m/s)", frontRightTargetVelocity);
+            telemetry.addData("# backLeft Target Velocity (m/s)", backLeftTargetVelocity);
+            telemetry.addData("# backRight Target Velocity (m/s)", backRightTargetVelocity);
+
+            telemetry.addData("@ frontLeft Velocity (m/s)", getVelocities()[0]);
+            telemetry.addData("@ frontRight Velocity (m/s)", getVelocities()[1]);
+            telemetry.addData("@ backLeft Velocity (m/s)", getVelocities()[2]);
+            telemetry.addData("@ backRight Velocity (m/s)", getVelocities()[3]);
+
+            getTargetTwist().toTelemetry("Target Twist", telemetry);
+
+        }
 
         getCurrentTwist().toTelemetry("Current Twist", telemetry);
-        getTargetTwist().toTelemetry("Target Twist", telemetry);
+        getTargetTwist().toTelemetry("Command Twist", telemetry);
 
         imu.toTelemetry(telemetry);
     }
@@ -221,6 +255,10 @@ public class MecanumDrive {
         measuredTwist.angularVelocity.zRotationRate = (float) ((-v_fl+v_fr-v_rl+v_rr) / (4.0 * (lx+ly)));
 
         return measuredTwist;
+    }
+
+    public Pose getRobotPosition() {
+        return poseEstimateFromWheelVelocities;
     }
 
     private double ticksToMeters(double ticks) {
