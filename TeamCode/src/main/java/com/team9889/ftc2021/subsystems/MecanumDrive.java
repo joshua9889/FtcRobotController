@@ -10,6 +10,7 @@ import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 import com.qualcomm.robotcore.hardware.VoltageSensor;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.team9889.lib.Pose;
+import com.team9889.lib.Vector3;
 import com.team9889.lib.sensors.RevIMU;
 import com.team9889.lib.Twist;
 
@@ -44,13 +45,9 @@ public class MecanumDrive {
 
     private ElapsedTime dt = new ElapsedTime();
 
-    private Pose poseEstimateFromWheelVelocities = new Pose(new Position(),
-            new Orientation(AxesReference.INTRINSIC, AxesOrder.ZXY, AngleUnit.RADIANS,
-                    0, 0, 0, 0));
+    private Pose poseEstimateFromWheelVelocities = new Pose();
 
-    private Pose poseEstimateFromCommandVelocities = new Pose(new Position(),
-            new Orientation(AxesReference.INTRINSIC, AxesOrder.ZXY, AngleUnit.RADIANS,
-                    0, 0, 0, 0));
+    private Pose poseEstimateFromCommandVelocities = new Pose();
 
     public enum DriveControlState {
         VELOCITY_CONTROL, OPEN_LOOP
@@ -110,14 +107,15 @@ public class MecanumDrive {
 
         imu.update();
 
-        poseEstimateFromWheelVelocities = Pose.integrateXYFromTwist(getCurrentTwist(), poseEstimateFromWheelVelocities, dt);
-        poseEstimateFromCommandVelocities = Pose.integrateXYFromTwist(getTargetTwist(), poseEstimateFromCommandVelocities, dt);
-        dt.reset();
-
         if (this.driveControlState == DriveControlState.VELOCITY_CONTROL) {
             setPIDFCoefficients(motorCoefficients);
             sendWheelVelocities();
         }
+    }
+
+    private void updateLocalization(){
+        poseEstimateFromWheelVelocities = Pose.integrateXYFromTwist(getCurrentTwist(), poseEstimateFromWheelVelocities, dt);
+        poseEstimateFromCommandVelocities = Pose.integrateXYFromTwist(getTargetTwist(), poseEstimateFromCommandVelocities, dt);
     }
 
     private void setPIDFCoefficients(PIDFCoefficients coefficients) {
@@ -167,12 +165,12 @@ public class MecanumDrive {
             telemetry.addData("@ backLeft Velocity (m/s)", getVelocities()[2]);
             telemetry.addData("@ backRight Velocity (m/s)", getVelocities()[3]);
 
-            getTargetTwist().toTelemetry("Target Twist", telemetry);
+//            getTargetTwist().toTelemetry("Target Twist", telemetry);
 
         }
 
-        getCurrentTwist().toTelemetry("Current Twist", telemetry);
-        getTargetTwist().toTelemetry("Command Twist", telemetry);
+//        getCurrentTwist().toTelemetry("Current Twist", telemetry);
+//        getTargetTwist().toTelemetry("Command Twist", telemetry);
 
         imu.toTelemetry(telemetry);
     }
@@ -220,13 +218,10 @@ public class MecanumDrive {
     public void setTargetTwist(Twist twist){
         this.currentTargetTwist = twist;
 
-        Velocity velocityInMS = currentTargetTwist.translationalVelocity.toUnit(DistanceUnit.METER);
-        AngularVelocity angularVelocityInRadS = currentTargetTwist.angularVelocity.toAngleUnit(AngleUnit.RADIANS);
+        double vx = currentTargetTwist.linear.x;
+        double vy = currentTargetTwist.linear.y;
 
-        double vx = velocityInMS.xVeloc;
-        double vy = velocityInMS.yVeloc;
-
-        double wz = angularVelocityInRadS.zRotationRate;
+        double wz = currentTargetTwist.angular.z;
 
         double v_fl = vx - vy - (lx + ly) * wz;
         double v_fr = vx + vy + (lx + ly) * wz;
@@ -243,16 +238,13 @@ public class MecanumDrive {
     public Twist getCurrentTwist() {
         Twist measuredTwist = new Twist();
 
-        measuredTwist.translationalVelocity.unit = DistanceUnit.METER;
-        measuredTwist.angularVelocity.unit = AngleUnit.RADIANS;
-
         double v_fl = getVelocities()[0], v_fr = getVelocities()[1];
         double v_rl = getVelocities()[2], v_rr = getVelocities()[3];
 
-        measuredTwist.translationalVelocity.xVeloc =  (v_fl + v_fr + v_rl + v_rr) / 4.;
-        measuredTwist.translationalVelocity.yVeloc = (-v_fl + v_fr + v_rl - v_rr) / 4.;
+        measuredTwist.linear.x = (v_fl + v_fr + v_rl + v_rr) / 4.;
+        measuredTwist.linear.y = (-v_fl + v_fr + v_rl - v_rr) / 4.;
 
-        measuredTwist.angularVelocity.zRotationRate = (float) ((-v_fl+v_fr-v_rl+v_rr) / (4.0 * (lx+ly)));
+        measuredTwist.angular.z = (-v_fl+v_fr-v_rl+v_rr) / (4.0 * (lx+ly));
 
         return measuredTwist;
     }

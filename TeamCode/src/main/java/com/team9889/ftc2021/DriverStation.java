@@ -21,13 +21,11 @@ public class DriverStation {
 
     public Twist getTwistCommand() {
         Twist twistCommand = new Twist();
-        twistCommand.translationalVelocity.unit = DistanceUnit.METER;
 
-        twistCommand.translationalVelocity.xVeloc = -gamepad1.left_stick_y * maxVelocity;
-        twistCommand.translationalVelocity.yVeloc =  -gamepad1.left_stick_x * maxVelocity;
+        twistCommand.linear.x = -gamepad1.left_stick_y * maxVelocity;
+        twistCommand.linear.y =  -gamepad1.left_stick_x * maxVelocity;
 
-        twistCommand.angularVelocity.unit = AngleUnit.RADIANS;
-        twistCommand.angularVelocity.zRotationRate = - (float) (Math.pow(gamepad1.right_stick_x, 3) * maxAngularVelocity);
+        twistCommand.angular.z = -Math.pow(gamepad1.right_stick_x, 3) * maxAngularVelocity;
 
         return twistCommand;
     }

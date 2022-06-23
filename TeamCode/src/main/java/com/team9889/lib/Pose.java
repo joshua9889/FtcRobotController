@@ -8,6 +8,7 @@ import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
 import org.firstinspires.ftc.robotcore.external.navigation.Position;
+import org.firstinspires.ftc.robotcore.external.navigation.Quaternion;
 import org.firstinspires.ftc.robotcore.external.navigation.Velocity;
 
 /**
@@ -15,38 +16,40 @@ import org.firstinspires.ftc.robotcore.external.navigation.Velocity;
  */
 public class Pose {
     public Position position;
-    public Orientation orientation;
+    public Quaternion orientation;
 
-    public Pose(Position position, Orientation orientation) {
+    public Pose(Position position, Quaternion orientation) {
         this.position = position;
         this.orientation = orientation;
     }
 
     public Pose() {
-        this(new Position(), new Orientation());
+        this(new Position(), new Quaternion());
         this.position.unit = DistanceUnit.METER;
-        this.orientation.angleUnit = AngleUnit.RADIANS;
-        this.orientation.axesOrder = AxesOrder.ZXY;
     }
 
-    public static Pose integrateXYFromTwist(Twist twist, Pose lastPose, ElapsedTime dt) {
+    public static Quaternion eulerToQuaternion(float roll, float pitch, float yaw) {
+        float rollOver2 = roll * 0.5f;
+        float sinRollOver2 = (float)Math.sin((double)rollOver2);
+        float cosRollOver2 = (float)Math.sin((double)rollOver2);
+        float pitchOver2 = pitch * 0.5f;
+        float sinPitchOver2 = (float)Math.sin((double)pitchOver2);
+        float cosPitchOver2 = (float)Math.sin((double)pitchOver2);
+        float yawOver2 = yaw * 0.5f;
+        float sinYawOver2 = (float)Math.sin((double)yawOver2);
+        float cosYawOver2 = (float)Math.sin((double)yawOver2);
+        Quaternion result = new Quaternion();
+        result.x = cosYawOver2 * cosPitchOver2 * cosRollOver2 + sinYawOver2 * sinPitchOver2 * sinRollOver2;
+        result.y = cosYawOver2 * cosPitchOver2 * sinRollOver2 - sinYawOver2 * sinPitchOver2 * cosRollOver2;
+        result.z = cosYawOver2 * sinPitchOver2 * cosRollOver2 + sinYawOver2 * cosPitchOver2 * sinRollOver2;
+        result.w = sinYawOver2 * cosPitchOver2 * cosRollOver2 - cosYawOver2 * sinPitchOver2 * sinRollOver2;
+        return result;
+    }
+
+    public static Pose integrateFromTwist(Twist twist, Pose lastPose, ElapsedTime dt) {
         Pose pose = new Pose();
 
-        Velocity velocity = twist.translationalVelocity.toUnit(DistanceUnit.METER);
-        AngularVelocity angularVelocity = twist.angularVelocity.toAngleUnit(AngleUnit.RADIANS);
 
-        double dt_sec = dt.seconds();
-        double d_angle = angularVelocity.zRotationRate * dt_sec;
-
-        Position dP = new Position();
-        dP.x = velocity.xVeloc * dt_sec * Math.cos(d_angle) + velocity.yVeloc * dt_sec * Math.sin(d_angle);
-        dP.y = velocity.yVeloc * dt_sec * Math.cos(d_angle) + velocity.xVeloc * dt_sec * Math.sin(d_angle);
-
-        pose.position.x = dP.x + lastPose.position.x;
-        pose.position.y = dP.y + lastPose.position.y;
-        pose.orientation.firstAngle = (float) (d_angle * dt_sec + lastPose.orientation.firstAngle);
-
-        dt.reset();
         return pose;
     }
 }
