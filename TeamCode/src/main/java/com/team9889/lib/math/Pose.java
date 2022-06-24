@@ -1,31 +1,26 @@
-package com.team9889.lib;
+package com.team9889.lib.math;
 
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
-import org.firstinspires.ftc.robotcore.external.navigation.AngularVelocity;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
-import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
-import org.firstinspires.ftc.robotcore.external.navigation.Position;
 import org.firstinspires.ftc.robotcore.external.navigation.Quaternion;
-import org.firstinspires.ftc.robotcore.external.navigation.Velocity;
 
 /**
  * Created by joshua9889 on 6/21/2022.
  */
 public class Pose {
-    public Position position;
+    public Vector3 position;
     public Quaternion orientation;
 
-    public Pose(Position position, Quaternion orientation) {
+    public Pose(Vector3 position, Quaternion orientation) {
         this.position = position;
         this.orientation = orientation;
     }
 
     public Pose() {
-        this(new Position(), new Quaternion());
-        this.position.unit = DistanceUnit.METER;
+        this(new Vector3(), new Quaternion());
     }
 
     public static Quaternion eulerToQuaternion(float roll, float pitch, float yaw) {
@@ -43,7 +38,14 @@ public class Pose {
         result.y = cosYawOver2 * cosPitchOver2 * sinRollOver2 - sinYawOver2 * sinPitchOver2 * cosRollOver2;
         result.z = cosYawOver2 * sinPitchOver2 * cosRollOver2 + sinYawOver2 * cosPitchOver2 * sinRollOver2;
         result.w = sinYawOver2 * cosPitchOver2 * cosRollOver2 - cosYawOver2 * sinPitchOver2 * sinRollOver2;
+        result = result.normalized();
         return result;
+    }
+
+    public static Quaternion orientationToQuaternion(Orientation orientation) {
+        Orientation angles = orientation.toAxesOrder(AxesOrder.XYZ);
+        angles.toAngleUnit(AngleUnit.RADIANS);
+        return eulerToQuaternion(angles.firstAngle, angles.secondAngle, angles.thirdAngle);
     }
 
     public static Pose integrateFromTwist(Twist twist, Pose lastPose, ElapsedTime dt) {

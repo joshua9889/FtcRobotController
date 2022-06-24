@@ -1,12 +1,7 @@
 package com.team9889.ftc2021;
 
 import com.qualcomm.robotcore.hardware.Gamepad;
-import com.team9889.lib.Twist;
-
-import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
-import org.firstinspires.ftc.robotcore.external.navigation.AngularVelocity;
-import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
-import org.firstinspires.ftc.robotcore.external.navigation.Velocity;
+import com.team9889.lib.math.Twist;
 
 public class DriverStation {
     private Gamepad gamepad1, gamepad2;

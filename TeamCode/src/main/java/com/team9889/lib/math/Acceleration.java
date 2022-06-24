@@ -1,4 +1,6 @@
-package com.team9889.lib;
+package com.team9889.lib.math;
+
+import com.team9889.lib.math.Vector3;
 
 /**
  * Created by joshua9889 on 6/22/2022.

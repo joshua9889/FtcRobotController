@@ -9,36 +9,34 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 import com.qualcomm.robotcore.hardware.VoltageSensor;
 import com.qualcomm.robotcore.util.ElapsedTime;
-import com.team9889.lib.Pose;
-import com.team9889.lib.Vector3;
+import com.team9889.lib.math.Pose;
 import com.team9889.lib.sensors.RevIMU;
-import com.team9889.lib.Twist;
+import com.team9889.lib.math.Twist;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
-import org.firstinspires.ftc.robotcore.external.navigation.AngularVelocity;
-import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
-import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
-import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
-import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
-import org.firstinspires.ftc.robotcore.external.navigation.Position;
-import org.firstinspires.ftc.robotcore.external.navigation.Velocity;
+import org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit;
 
 import java.util.List;
 
 @Config
 public class MecanumDrive {
 
+    /**
+     * Hardware
+     */
     private DcMotorEx frontLeft, frontRight, backLeft, backRight;
     public RevIMU imu;
     private List<LynxModule> allHubs;
-    private HardwareMap voltageHardwareMap;
+    private VoltageSensor voltageSensor;
 
     private DriveControlState driveControlState = DriveControlState.OPEN_LOOP;
 
     public static PIDFCoefficients motorCoefficients =
             new PIDFCoefficients(12,  0,   0, 650),
             lastMotorCoefficients = motorCoefficients;
+
+    public static double MAXIMUM_CURRENT = 7.0; // Amps
 
     private double frontLeftTargetVelocity, frontRightTargetVelocity;
     private double backLeftTargetVelocity, backRightTargetVelocity;
@@ -60,7 +58,7 @@ public class MecanumDrive {
     }
 
     public void init(HardwareMap hardwareMap, DriveControlState driveControlState) {
-        this.voltageHardwareMap = hardwareMap;
+        this.voltageSensor = hardwareMap.voltageSensor.iterator().next();
         this.driveControlState = driveControlState;
 
         this.frontLeft = hardwareMap.get(DcMotorEx.class, "lf");
@@ -75,6 +73,7 @@ public class MecanumDrive {
 
         for (DcMotorEx motor : motors) {
             motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+            motor.setCurrentAlert(this.MAXIMUM_CURRENT, CurrentUnit.AMPS);
 
             switch (this.driveControlState) {
                 case VELOCITY_CONTROL:
@@ -114,8 +113,8 @@ public class MecanumDrive {
     }
 
     private void updateLocalization(){
-        poseEstimateFromWheelVelocities = Pose.integrateXYFromTwist(getCurrentTwist(), poseEstimateFromWheelVelocities, dt);
-        poseEstimateFromCommandVelocities = Pose.integrateXYFromTwist(getTargetTwist(), poseEstimateFromCommandVelocities, dt);
+//        poseEstimateFromWheelVelocities = Pose.integrateXYFromTwist(getCurrentTwist(), poseEstimateFromWheelVelocities, dt);
+//        poseEstimateFromCommandVelocities = Pose.integrateXYFromTwist(getTargetTwist(), poseEstimateFromCommandVelocities, dt);
     }
 
     private void setPIDFCoefficients(PIDFCoefficients coefficients) {
@@ -130,16 +129,7 @@ public class MecanumDrive {
     }
 
     private double getBatteryVoltage() {
-        double result = Double.POSITIVE_INFINITY;
-
-        for (VoltageSensor sensor : voltageHardwareMap.voltageSensor) {
-            double voltage = sensor.getVoltage();
-            if (voltage > 0) {
-                result = Math.min(result, voltage);
-            }
-        }
-
-        return result;
+        return voltageSensor.getVoltage();
     }
 
     public void updateTelemetry(Telemetry telemetry) {

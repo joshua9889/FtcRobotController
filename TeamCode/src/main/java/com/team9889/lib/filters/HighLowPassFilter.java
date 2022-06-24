@@ -1,6 +1,6 @@
-package com.team9889.lib;
+package com.team9889.lib.filters;
 
-public class Filter {
+public class HighLowPassFilter {
 
     // rez amount, from sqrt(2) to ~ 0.1
     private float resonance;
@@ -19,7 +19,7 @@ public class Filter {
     // Array of output values, latest are in front
     private float[] outputHistory = new float[3];
 
-    public Filter(float frequency, int sampleRate, PassType passType, float resonance) {
+    public HighLowPassFilter(float frequency, int sampleRate, PassType passType, float resonance) {
         this.resonance = resonance;
         this.frequency = frequency;
         this.sampleRate = sampleRate;

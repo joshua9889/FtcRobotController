@@ -5,8 +5,8 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.RobotLog;
 import com.team9889.ftc2021.Constants;
-import com.team9889.lib.CircularBuffer;
-import com.team9889.lib.Filter;
+import com.team9889.lib.filters.CircularBuffer;
+import com.team9889.lib.filters.HighLowPassFilter;
 
 import org.apache.commons.math3.filter.DefaultMeasurementModel;
 import org.apache.commons.math3.filter.DefaultProcessModel;
@@ -151,9 +151,9 @@ public class RevIMU {
     }
 
     // Need to adjust these values
-    private Filter xAccelerationFilter = new Filter(Constants.frequency, Constants.sampleRate, Filter.PassType.Highpass,Constants.resonance);
-    private Filter yAccelerationFilter = new Filter(Constants.frequency, Constants.sampleRate, Filter.PassType.Highpass,Constants.resonance);
-    private Filter zAccelerationFilter = new Filter(Constants.frequency, Constants.sampleRate, Filter.PassType.Highpass,Constants.resonance);
+    private HighLowPassFilter xAccelerationFilter = new HighLowPassFilter(Constants.frequency, Constants.sampleRate, HighLowPassFilter.PassType.Highpass,Constants.resonance);
+    private HighLowPassFilter yAccelerationFilter = new HighLowPassFilter(Constants.frequency, Constants.sampleRate, HighLowPassFilter.PassType.Highpass,Constants.resonance);
+    private HighLowPassFilter zAccelerationFilter = new HighLowPassFilter(Constants.frequency, Constants.sampleRate, HighLowPassFilter.PassType.Highpass,Constants.resonance);
 
     private CircularBuffer xBuffer = new CircularBuffer(Constants.windowSize);
     private CircularBuffer yBuffer = new CircularBuffer(Constants.windowSize);

@@ -7,7 +7,7 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.team9889.ftc2021.DriverStation;
 import com.team9889.ftc2021.subsystems.MecanumDrive;
 import com.team9889.lib.Rate;
-import com.team9889.lib.Twist;
+import com.team9889.lib.math.Twist;
 
 @TeleOp
 public class MecanumOpMode extends LinearOpMode {
