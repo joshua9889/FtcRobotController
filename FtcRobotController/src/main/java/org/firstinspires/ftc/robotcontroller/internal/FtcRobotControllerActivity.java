@@ -33,6 +33,7 @@ package org.firstinspires.ftc.robotcontroller.internal;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.content.pm.ActivityInfo;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Handler;
@@ -48,16 +49,14 @@ import com.qualcomm.robotcore.hardware.DeviceInterfaceModule;
 import com.qualcomm.robotcore.util.SerialNumber;
 
 @SuppressWarnings("WeakerAccess")
-public class FtcRobotControllerActivity extends Activity
-  {
+public class FtcRobotControllerActivity extends Activity {
 
-    public FtcRobotControllerActivity() {
+  public FtcRobotControllerActivity() {
       mHandler = new Handler();
     }
   public static final String TAG = "RCActivity";
   DeviceInterfaceModule cdim0=null, cdim1=null;
 
-  protected Button buttonMenu;
   protected TextView textVoltage0, textVoltage1, textVoltage2, textVoltage3;
   protected TextView textVoltage4, textVoltage5, textVoltage6, textVoltage7;
   TextView[] voltageView;
@@ -71,6 +70,7 @@ public class FtcRobotControllerActivity extends Activity
   protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
     setContentView(R.layout.activity_ftc_controller);
+    setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
 
     textVoltage0 = findViewById(R.id.textView0);
     textVoltage1 = findViewById(R.id.textView1);
