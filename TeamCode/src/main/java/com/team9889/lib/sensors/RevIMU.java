@@ -16,8 +16,15 @@ import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
 public class RevIMU {
 
     private BNO055IMU imu;
+    private AxesOrder axesOrder;
 
-    public RevIMU(String id, HardwareMap hardwareMap){
+    public RevIMU(String id, HardwareMap hardwareMap) {
+        this(id, hardwareMap, AxesOrder.ZXY);
+    }
+
+    public RevIMU(String id, HardwareMap hardwareMap, AxesOrder imuOrientation){
+        axesOrder = imuOrientation;
+
         BNO055IMU.Parameters parameters = new BNO055IMU.Parameters();
 
         parameters.angleUnit = BNO055IMU.AngleUnit.DEGREES;
@@ -32,7 +39,7 @@ public class RevIMU {
 
     public double getCurrentRotation() {
         if (imu != null) {
-            return imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.RADIANS).firstAngle;
+            return imu.getAngularOrientation(AxesReference.INTRINSIC, axesOrder, AngleUnit.RADIANS).firstAngle;
         } else {
             RobotLog.d("IMU not initialized");
             return 0.0;
