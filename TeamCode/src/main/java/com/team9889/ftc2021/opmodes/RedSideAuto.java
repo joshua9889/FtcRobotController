@@ -2,7 +2,6 @@ package com.team9889.ftc2021.opmodes;
 
 import com.acmerobotics.roadrunner.geometry.Pose2d;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
-import com.qualcomm.robotcore.util.ElapsedTime;
 import com.team9889.ftc2021.subsystems.Intake;
 import com.team9889.ftc2021.subsystems.MecanumDrive;
 
@@ -24,17 +23,17 @@ public class RedSideAuto extends OpMode {
     public void loop() {
 
         // Update the Encoder Values
-        drive.odometry.updateEncoderPositions(
+        drive.threeWheelOdometry.updateEncoderPositions(
                 intake.backIntake.getCurrentPosition(),
                 intake.intakeTransfer.getCurrentPosition(),
                 intake.frontIntake.getCurrentPosition()
         );
 
         // Update the Pose Estimation
-        drive.odometry.update();
+        drive.threeWheelOdometry.update();
 
         // Current Pose Estimation of the robot on the field
-        Pose2d estimate = drive.odometry.getPoseEstimate();
+        Pose2d estimate = drive.threeWheelOdometry.getPoseEstimate();
 
         // Target Pose
         Pose2d target = new Pose2d(1, 0, 0);
@@ -51,6 +50,5 @@ public class RedSideAuto extends OpMode {
 
         // Set the velocity of the robot
         drive.setTargetTwistFieldRelative(translationResponse.getX(), translationResponse.getY(), rotationalResponse.getHeading());
-
     }
 }

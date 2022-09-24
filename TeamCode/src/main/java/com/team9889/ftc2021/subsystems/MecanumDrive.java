@@ -2,25 +2,26 @@ package com.team9889.ftc2021.subsystems;
 
 import com.acmerobotics.roadrunner.geometry.Pose2d;
 import com.acmerobotics.roadrunner.localization.ThreeTrackingWheelLocalizer;
-import com.qualcomm.hardware.lynx.LynxModule;
+import com.acmerobotics.roadrunner.localization.TwoTrackingWheelLocalizer;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
-import com.qualcomm.robotcore.util.ElapsedTime;
 import com.team9889.lib.sensors.RevIMU;
-
-import org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit;
 
 import java.util.Arrays;
 import java.util.List;
 
+/**
+ * Example Mecanum Drive with Two Types of Odometry Methods
+ */
 public class MecanumDrive {
 
     private DcMotorEx frontLeft, frontRight, backLeft, backRight;
     public RevIMU imu;
 
-    public Odometry odometry = new Odometry();
+    public ThreeWheelOdometry threeWheelOdometry = new ThreeWheelOdometry();
+    public TwoWheelOdometry twoWheelOdometry = new TwoWheelOdometry();
 
     public void init(HardwareMap hardwareMap) {
 
@@ -56,7 +57,10 @@ public class MecanumDrive {
         this.imu = new RevIMU("imu", hardwareMap);
     }
 
-    public void setWheelVelocities(double frontLeftTargetVelocity, double frontRightTargetVelocity, double backLeftTargetVelocity, double backRightTargetVelocity) {
+    public void setWheelVelocities(double frontLeftTargetVelocity,
+                                   double frontRightTargetVelocity,
+                                   double backLeftTargetVelocity,
+                                   double backRightTargetVelocity) {
         this.frontLeft.setVelocity(metersToTicks(frontLeftTargetVelocity));
         this.frontRight.setVelocity(metersToTicks(frontRightTargetVelocity));
         this.backLeft.setVelocity(metersToTicks(backLeftTargetVelocity));
@@ -64,7 +68,7 @@ public class MecanumDrive {
     }
 
     /**
-     *  Taken from https://ecam-eurobot.github.io/Tutorials/mechanical/mecanum.html
+     *  Equations taken from https://ecam-eurobot.github.io/Tutorials/mechanical/mecanum.html
      *
      *  v_fl , v_fr, v_rl and v_rr represent the linear velocities for the front left,
      *      front right, rear left and rear right wheel respectively.
@@ -90,7 +94,7 @@ public class MecanumDrive {
     }
 
     public void setTargetTwistFieldRelative (double vx, double vy, double wz) {
-        double angleOffset = odometry.getPoseEstimate().getHeading();
+        double angleOffset = threeWheelOdometry.getPoseEstimate().getHeading();
         double vx_modified = vx * Math.cos(angleOffset) - vy * Math.sin(angleOffset);
         double vy_modified = vx * Math.sin(angleOffset) + vy * Math.cos(angleOffset);
 
@@ -107,20 +111,24 @@ public class MecanumDrive {
 
 
     /**
+     * POSE ESTIMATION CODE
+     */
+
+    /**
      * Pose Estimation Using Road Runner ThreeTrackingWheelLocalizer
      */
 
-    public class Odometry extends ThreeTrackingWheelLocalizer {
+    public class ThreeWheelOdometry extends ThreeTrackingWheelLocalizer {
 
         private double leftEncoderM, rightEncoderM, centerEncoderM;
 
         public void updateEncoderPositions(double l, double r, double c) {
-            leftEncoderM = l;
-            rightEncoderM = r;
-            centerEncoderM = c;
+            leftEncoderM = ticksToMeters(l);
+            rightEncoderM = ticksToMeters(r);
+            centerEncoderM = ticksToMeters(c);
         }
 
-        public Odometry() {
+        public ThreeWheelOdometry() {
 
             // Locations of Wheels Relative to (0,0,0) on Robot
             super(Arrays.asList(
@@ -134,6 +142,35 @@ public class MecanumDrive {
         public List<Double> getWheelPositions() {
             return Arrays.asList(
                 leftEncoderM, rightEncoderM, centerEncoderM
+            );
+        }
+    }
+
+    public class TwoWheelOdometry extends TwoTrackingWheelLocalizer {
+
+        private double forwardEncoder, sidewaysEncoder;
+
+        public void updateEncoderPositions(double l, double c) {
+            forwardEncoder = ticksToMeters(l);
+            sidewaysEncoder = ticksToMeters(c);
+        }
+
+        public TwoWheelOdometry() {
+            super(Arrays.asList(
+                    new Pose2d(-1.375, -7.5, 0),
+                    new Pose2d(0.25, 7.25, Math.toRadians(90))
+            ));
+        }
+
+        @Override
+        public double getHeading() {
+            return imu.getCurrentRotation();
+        }
+
+        @Override
+        public List<Double> getWheelPositions() {
+            return Arrays.asList(
+                    forwardEncoder, sidewaysEncoder
             );
         }
     }
