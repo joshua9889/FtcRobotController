@@ -1,7 +1,6 @@
 package com.team9889.ftc2021;
 
 import com.qualcomm.robotcore.hardware.Gamepad;
-import com.team9889.lib.math.Twist;
 
 public class DriverStation {
     private Gamepad gamepad1, gamepad2;
@@ -12,16 +11,13 @@ public class DriverStation {
     }
 
     public static double maxVelocity = (312./60.) * Math.PI * 0.096;    // m/s
-    public static double maxAngularVelocity = 2 * Math.PI;                  // Rad/s
+    public static double maxAngularVelocity = 2 * Math.PI;              // Rad/s
 
-    public Twist getTwistCommand() {
-        Twist twistCommand = new Twist();
+    public double[] getCommandedDriveVelocity() {
+        double x = -gamepad1.left_stick_y * maxVelocity;
+        double y =  -gamepad1.left_stick_x * maxVelocity;
+        double w = -gamepad1.right_stick_x * maxAngularVelocity;
 
-        twistCommand.linear.x = -gamepad1.left_stick_y * maxVelocity;
-        twistCommand.linear.y =  -gamepad1.left_stick_x * maxVelocity;
-
-        twistCommand.angular.z = -Math.pow(gamepad1.right_stick_x, 3) * maxAngularVelocity;
-
-        return twistCommand;
+        return new double[] {x, y, w};
     }
 }
