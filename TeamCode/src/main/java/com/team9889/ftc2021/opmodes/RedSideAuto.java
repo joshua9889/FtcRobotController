@@ -5,9 +5,6 @@ import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.team9889.ftc2021.subsystems.Intake;
 import com.team9889.ftc2021.subsystems.MecanumDrive;
 
-/**
- * Created by joshua9889 on 9/23/2022.
- */
 public class RedSideAuto extends OpMode {
 
     MecanumDrive drive = new MecanumDrive();

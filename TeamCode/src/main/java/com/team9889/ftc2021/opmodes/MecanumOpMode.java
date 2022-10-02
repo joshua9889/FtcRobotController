@@ -24,9 +24,10 @@ public class MecanumOpMode extends LinearOpMode {
 
         while (opModeIsActive()) {
 
-            drive.twoWheelOdometry.updateEncoderPositions(
+            drive.twoWheelOdometry.updateEncoderIMU(
                     intake.backIntake.getCurrentPosition(),
-                    intake.frontIntake.getCurrentPosition()
+                    intake.frontIntake.getCurrentPosition(),
+                    drive.imu.getCurrentRotation()
             );
 
             double[] velocities = driverStation.getCommandedDriveVelocity();

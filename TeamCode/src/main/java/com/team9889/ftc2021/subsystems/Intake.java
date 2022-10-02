@@ -3,9 +3,6 @@ package com.team9889.ftc2021.subsystems;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 
-/**
- * Created by joshua9889 on 9/23/2022.
- */
 public class Intake {
     public DcMotor backIntake, frontIntake, intakeTransfer;
 

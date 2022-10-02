@@ -38,12 +38,7 @@ public class RevIMU {
     }
 
     public double getCurrentRotation() {
-        if (imu != null) {
-            return imu.getAngularOrientation(AxesReference.INTRINSIC, axesOrder, AngleUnit.RADIANS).firstAngle;
-        } else {
-            RobotLog.d("IMU not initialized");
-            return 0.0;
-        }
+        return imu.getAngularOrientation(AxesReference.INTRINSIC, axesOrder, AngleUnit.RADIANS).firstAngle;
     }
 
 }

@@ -1,16 +1,10 @@
 package com.team9889.ftc2021.subsystems;
 
-import com.acmerobotics.roadrunner.geometry.Pose2d;
-import com.acmerobotics.roadrunner.localization.ThreeTrackingWheelLocalizer;
-import com.acmerobotics.roadrunner.localization.TwoTrackingWheelLocalizer;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.team9889.lib.sensors.RevIMU;
-
-import java.util.Arrays;
-import java.util.List;
 
 /**
  * Example Mecanum Drive with Two Types of Odometry Methods
@@ -39,10 +33,8 @@ public class MecanumDrive {
         this.frontRight.setDirection(DcMotorSimple.Direction.REVERSE);
         this.backRight.setDirection(DcMotorSimple.Direction.REVERSE);
 
-        DcMotorEx[] motors = new DcMotorEx[] {frontLeft, frontRight, backLeft, backRight};
-
         // Reset All Encoders, Run using Encoders (Speed Control), and Brake at Zero Power.
-        for (DcMotorEx motor : motors) {
+        for (DcMotorEx motor : new DcMotorEx[] {frontLeft, frontRight, backLeft, backRight}) {
             motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
 
             motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
@@ -57,6 +49,13 @@ public class MecanumDrive {
         this.imu = new RevIMU("imu", hardwareMap);
     }
 
+    /**
+     * Send Velocities to Hub
+     * @param frontLeftTargetVelocity m/s
+     * @param frontRightTargetVelocity m/s
+     * @param backLeftTargetVelocity m/s
+     * @param backRightTargetVelocity m/s
+     */
     public void setWheelVelocities(double frontLeftTargetVelocity,
                                    double frontRightTargetVelocity,
                                    double backLeftTargetVelocity,
@@ -84,6 +83,12 @@ public class MecanumDrive {
     private final double lx = 150.0 / 1000.;
     private final double ly = 192.4 / 1000.;
 
+    /**
+     * Robot Relative Velocity Command
+     * @param vx m/s
+     * @param vy m/s
+     * @param wz rad/s
+     */
     public void setTargetTwistRobotRelative(double vx, double vy, double wz){
         double v_fl = vx - vy - (lx + ly) * wz;
         double v_fr = vx + vy + (lx + ly) * wz;
@@ -93,6 +98,12 @@ public class MecanumDrive {
         this.setWheelVelocities(v_fl, v_fr, v_rl, v_rr);
     }
 
+    /**
+     * Field Relative Velocity Command
+     * @param vx m/s
+     * @param vy m/s
+     * @param wz rad/s
+     */
     public void setTargetTwistFieldRelative (double vx, double vy, double wz) {
         double angleOffset = threeWheelOdometry.getPoseEstimate().getHeading();
         double vx_modified = vx * Math.cos(angleOffset) - vy * Math.sin(angleOffset);
@@ -101,77 +112,19 @@ public class MecanumDrive {
         setTargetTwistRobotRelative(vx_modified, vy_modified, wz);
     }
 
-    private double ticksToMeters(double ticks) {
+    /**
+     * @param ticks Ticks of the Drive Encoders
+     * @return Meters of the Drive Encoders
+     */
+    public static double ticksToMeters(double ticks) {
         return Math.PI * 0.096 * ticks/537.7;
     }
 
-    private int metersToTicks(double meters) {
+    /**
+     * @param meters Meters of the Drive Encoders
+     * @return Ticks of Drive Encoders
+     */
+    public static int metersToTicks(double meters) {
         return (int) (19.2 * meters / (2 * Math.PI * (0.096 / 2.0)));
-    }
-
-
-    /**
-     * POSE ESTIMATION CODE
-     */
-
-    /**
-     * Pose Estimation Using Road Runner ThreeTrackingWheelLocalizer
-     */
-
-    public class ThreeWheelOdometry extends ThreeTrackingWheelLocalizer {
-
-        private double leftEncoderM, rightEncoderM, centerEncoderM;
-
-        public void updateEncoderPositions(double l, double r, double c) {
-            leftEncoderM = ticksToMeters(l);
-            rightEncoderM = ticksToMeters(r);
-            centerEncoderM = ticksToMeters(c);
-        }
-
-        public ThreeWheelOdometry() {
-
-            // Locations of Wheels Relative to (0,0,0) on Robot
-            super(Arrays.asList(
-                    new Pose2d(-1.375, -7.5, 0),
-                    new Pose2d(2.56625, 7.5, 0),
-                    new Pose2d(0.25, 7.25, Math.toRadians(90))
-            ));
-        }
-
-        @Override
-        public List<Double> getWheelPositions() {
-            return Arrays.asList(
-                leftEncoderM, rightEncoderM, centerEncoderM
-            );
-        }
-    }
-
-    public class TwoWheelOdometry extends TwoTrackingWheelLocalizer {
-
-        private double forwardEncoder, sidewaysEncoder;
-
-        public void updateEncoderPositions(double l, double c) {
-            forwardEncoder = ticksToMeters(l);
-            sidewaysEncoder = ticksToMeters(c);
-        }
-
-        public TwoWheelOdometry() {
-            super(Arrays.asList(
-                    new Pose2d(-1.375, -7.5, 0),
-                    new Pose2d(0.25, 7.25, Math.toRadians(90))
-            ));
-        }
-
-        @Override
-        public double getHeading() {
-            return imu.getCurrentRotation();
-        }
-
-        @Override
-        public List<Double> getWheelPositions() {
-            return Arrays.asList(
-                    forwardEncoder, sidewaysEncoder
-            );
-        }
     }
 }
